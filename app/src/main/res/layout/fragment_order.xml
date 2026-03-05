@@ -68,4 +68,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="OK" />
+
+    <Button
+        android:id="@+id/btnOpen"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ВІДКРИТИ БАЗУ ДАНИХ"
+        android:backgroundTint="#4CAF50"
+        android:textColor="#FFFFFF" />
 </LinearLayout>

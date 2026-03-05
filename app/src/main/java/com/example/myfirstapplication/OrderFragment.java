@@ -1,5 +1,6 @@
 package com.example.myfirstapplication;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,6 +14,8 @@ public class OrderFragment extends Fragment {
 
     private EditText etFlowerName;
     private RadioGroup rgColor, rgPrice;
+    private DatabaseHelper dbHelper;
+    private Button btnOpen;
 
     public OrderFragment() {}
 
@@ -31,6 +34,13 @@ public class OrderFragment extends Fragment {
 
         btnOk.setOnClickListener(v -> handleOkClick());
 
+        dbHelper = new DatabaseHelper(getActivity());
+        btnOpen = view.findViewById(R.id.btnOpen);
+
+        btnOpen.setOnClickListener(v -> {
+            startActivity(new Intent(getActivity(), HistoryActivity.class));
+        });
+
         return view;
     }
 
@@ -38,26 +48,25 @@ public class OrderFragment extends Fragment {
         if (etFlowerName.getText().toString().trim().isEmpty()
                 || rgColor.getCheckedRadioButtonId() == -1
                 || rgPrice.getCheckedRadioButtonId() == -1) {
-
-            Toast.makeText(getActivity(),
-                    "Заповніть всі поля",
-                    Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity(), "Заповніть всі поля", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String resultText = buildResultText();
+        View colorRB = rgColor.findViewById(rgColor.getCheckedRadioButtonId());
+        int colorIdx = rgColor.indexOfChild(colorRB);
 
+        View priceRB = rgPrice.findViewById(rgPrice.getCheckedRadioButtonId());
+        int priceIdx = rgPrice.indexOfChild(priceRB);
+
+        dbHelper.insertOrder(etFlowerName.getText().toString(), colorIdx, priceIdx);
+        Toast.makeText(getActivity(), "Збережено в базу!", Toast.LENGTH_SHORT).show();
+
+        String resultText = buildResultText();
         Bundle bundle = new Bundle();
         bundle.putString("result", resultText);
-
-        ResultFragment resultFragment = new ResultFragment();
-        resultFragment.setArguments(bundle);
-
-        requireActivity().getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.fragment_container, resultFragment)
-                .addToBackStack(null)
-                .commit();
+        ResultFragment rf = new ResultFragment();
+        rf.setArguments(bundle);
+        getParentFragmentManager().beginTransaction().replace(R.id.fragment_container, rf).addToBackStack(null).commit();
     }
 
     private String buildResultText() {
@@ -72,9 +81,4 @@ public class OrderFragment extends Fragment {
                 + "Ціна: " + price.getText();
     }
 
-//    public void clearForm() {
-//        etFlowerName.setText("");
-//        rgColor.clearCheck();
-//        rgPrice.clearCheck();
-//    }
 }
