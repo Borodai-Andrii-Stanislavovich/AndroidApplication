@@ -13,10 +13,15 @@
             android:layout_height="wrap_content"
             android:text="Обрати файл з пристрою" />
 
-        <Button android:id="@+id/btnStreamUrl"
+        <Button android:id="@+id/btnRadioList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Ввести URL для відтворення" />
+            android:text="Радіо Android++" />
+
+        <Button android:id="@+id/btnDirectUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ввести URI Інтернет" />
 
         <VideoView
             android:id="@+id/videoView"
@@ -43,6 +48,7 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/rewindForwardContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"

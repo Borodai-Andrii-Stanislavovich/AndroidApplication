@@ -2,14 +2,15 @@ package com.example.myfirstapplication;
 
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.database.Cursor;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.MediaController;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -18,6 +19,7 @@ import android.widget.VideoView;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
+    private View rewindForwardContainer;
     private VideoView videoView;
     private MediaPlayer mediaPlayer;
     private SeekBar seekBar;
@@ -25,6 +27,8 @@ public class MainActivity extends AppCompatActivity {
     private Uri currentUri;
     private boolean isVideo = false;
     private Handler handler = new Handler();
+    private DatabaseHelper dbHelper;
+    private View audioContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +39,14 @@ public class MainActivity extends AppCompatActivity {
         seekBar = findViewById(R.id.seekBar);
         tvTime = findViewById(R.id.tvTime);
         tvMetadata = findViewById(R.id.tvMetadata);
+        dbHelper = new DatabaseHelper(this);
+        audioContainer = findViewById(R.id.audioContainer);
+
+        rewindForwardContainer = findViewById(R.id.rewindForwardContainer);
+
+
+        findViewById(R.id.btnRadioList).setOnClickListener(v -> showRadioListDialog());
+        findViewById(R.id.btnDirectUrl).setOnClickListener(v -> showUrlDialog());
 
         // Вибір локального файлу
         findViewById(R.id.btnPickLocal).setOnClickListener(v -> {
@@ -45,8 +57,6 @@ public class MainActivity extends AppCompatActivity {
             startActivityForResult(intent, 101);
         });
 
-        // Інтернет-радіо / Відео по URL
-        findViewById(R.id.btnStreamUrl).setOnClickListener(v -> showUrlDialog());
 
         // Керування
         findViewById(R.id.btnPlay).setOnClickListener(v -> playMedia());
@@ -68,6 +78,64 @@ public class MainActivity extends AppCompatActivity {
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
         });
+    }
+
+    private void showRadioListDialog() {
+        Cursor cursor = dbHelper.getAllStations();
+        String[] names = new String[cursor.getCount() + 1];
+        String[] urls = new String[cursor.getCount() + 1];
+
+        int i = 0;
+        while (cursor.moveToNext()) {
+            names[i] = cursor.getString(1); // NAME
+            urls[i] = cursor.getString(2); // URL
+            i++;
+        }
+        names[i] = "[ + Додати нову станцію ]";
+
+        new AlertDialog.Builder(this)
+                .setTitle("Оберіть станцію")
+                .setItems(names, (dialog, clicked) -> {
+                    if (clicked == names.length - 1) {
+                        showAddStationDialog();
+                    } else {
+                        currentUri = Uri.parse(urls[clicked]);
+                        isVideo = false;
+                        prepareMedia();
+                        audioContainer.setVisibility(View.GONE); // Приховуємо часову лінію (Пункт 1)
+                    }
+                }).show();
+    }
+
+    private void showAddStationDialog() {
+        LinearLayout layout = new LinearLayout(this);
+        // Виправлено: VERTICAL замість vertical
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+        final EditText nameInput = new EditText(this);
+        nameInput.setHint("Назва");
+
+        final EditText urlInput = new EditText(this);
+        urlInput.setHint("URL (https://...)");
+
+        layout.addView(nameInput);
+        layout.addView(urlInput);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Нова станція")
+                .setView(layout)
+                .setPositiveButton("Зберегти", (d, w) -> {
+                    String name = nameInput.getText().toString();
+                    String url = urlInput.getText().toString();
+                    if (!name.isEmpty() && !url.isEmpty()) {
+                        dbHelper.addStation(name, url);
+                        Toast.makeText(this, "Додано!", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "Заповніть всі поля", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Скасувати", null)
+                .show();
     }
 
     private void showUrlDialog() {
@@ -108,9 +176,27 @@ public class MainActivity extends AppCompatActivity {
     private void prepareMedia() {
         stopMedia();
 
+        // Перевіряємо, чи це локальний файл з пам'яті пристрою
+        boolean isLocalFile = (currentUri != null && "content".equals(currentUri.getScheme()));
+
+        if (isVideo || isLocalFile) {
+            // Показуємо все для відео або локальних аудіо-файлів
+            audioContainer.setVisibility(View.VISIBLE);
+            if (rewindForwardContainer != null) {
+                rewindForwardContainer.setVisibility(View.VISIBLE);
+            }
+        } else {
+            // Ховаємо лінійку та кнопки перемоту для РАДІО (URL-потоків)
+            audioContainer.setVisibility(View.GONE);
+            if (rewindForwardContainer != null) {
+                rewindForwardContainer.setVisibility(View.GONE);
+            }
+        }
+
         if (isVideo) {
             videoView.setVisibility(View.VISIBLE);
             videoView.setVideoURI(currentUri);
+            videoView.setMediaController(new MediaController(this));
             videoView.setOnPreparedListener(mp -> {
                 seekBar.setMax(videoView.getDuration());
                 updateSeekBar();
@@ -122,30 +208,17 @@ public class MainActivity extends AppCompatActivity {
             try {
                 mediaPlayer = new MediaPlayer();
                 mediaPlayer.setDataSource(this, currentUri);
-
-                // Налаштовуємо слухач, який спрацює, коли потік завантажиться
                 mediaPlayer.setOnPreparedListener(mp -> {
                     mp.start();
-                    int duration = mp.getDuration();
-                    if (duration > 0) {
-                        seekBar.setMax(duration);
-                    } else {
-                        seekBar.setMax(0); // Для радіо тривалість невідома
+                    if (mp.getDuration() > 0) {
+                        seekBar.setMax(mp.getDuration());
                     }
                     updateSeekBar();
-                    Toast.makeText(MainActivity.this, "Грає!", Toast.LENGTH_SHORT).show();
                 });
-
-                mediaPlayer.setOnErrorListener((mp, what, extra) -> {
-                    Toast.makeText(MainActivity.this, "Помилка відтворення: " + what, Toast.LENGTH_SHORT).show();
-                    return true;
-                });
-
-                mediaPlayer.prepareAsync(); // Важливо для мережі!
-                Toast.makeText(this, "Підключення до радіо...", Toast.LENGTH_SHORT).show();
-
+                mediaPlayer.setLooping(true);
+                mediaPlayer.prepareAsync();
             } catch (Exception e) {
-                Toast.makeText(this, "Помилка налаштування: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Помилка відтворення", Toast.LENGTH_SHORT).show();
             }
         }
     }
