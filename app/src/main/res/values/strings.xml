@@ -1,5 +1,5 @@
 <resources>
-
+    <string name="app_name">MyFirstApplication</string>
     <string name="btnPickLocal">Обрати файл з пристрою</string>
     <string name="btnRadioList">Радіо Android++</string>
     <string name="btnDirectUrl">Ввести URI Інтернет</string>
