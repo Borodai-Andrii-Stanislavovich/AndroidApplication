@@ -1,5 +1,73 @@
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/fragment_container"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" />
+    android:layout_height="match_parent"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <Button android:id="@+id/btnPickLocal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Обрати файл з пристрою" />
+
+        <Button android:id="@+id/btnStreamUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ввести URL для відтворення" />
+
+        <VideoView
+            android:id="@+id/videoView"
+            android:layout_width="match_parent"
+            android:layout_height="250dp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/audioContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="10dp">
+            <SeekBar
+                android:id="@+id/seekBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+            <TextView
+                android:id="@+id/tvTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="00:00 / 00:00"
+                android:layout_gravity="center" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="10dp">
+
+            <Button android:id="@+id/btnRewind" android:text="-15s" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <Button android:id="@+id/btnForward" android:text="+15s" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+            <Button android:id="@+id/btnPlay" android:text="Play" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <Button android:id="@+id/btnPause" android:text="Pause" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <Button android:id="@+id/btnStop" android:text="Stop" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvMetadata"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</ScrollView>
