@@ -13,9 +13,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // Створення таблиці (SQL стиль за вашим запитом)
         db.execSQL("CREATE TABLE STATIONS (ID INTEGER PRIMARY KEY AUTOINCREMENT, NAME TEXT, URL TEXT)");
-        // Початкові дані
         db.execSQL("INSERT INTO STATIONS (NAME, URL) VALUES ('Kiss FM', 'http://online.kissfm.ua/KissFM')");
         db.execSQL("INSERT INTO STATIONS (NAME, URL) VALUES ('Radio ROKS', 'http://195.95.206.13:8000/RadioROKS')");
     }

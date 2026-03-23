@@ -19,7 +19,6 @@ import android.widget.VideoView;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
-    private View rewindForwardContainer;
     private VideoView videoView;
     private MediaPlayer mediaPlayer;
     private SeekBar seekBar;
@@ -28,7 +27,10 @@ public class MainActivity extends AppCompatActivity {
     private boolean isVideo = false;
     private Handler handler = new Handler();
     private DatabaseHelper dbHelper;
+
     private View audioContainer;
+    private View rewindForwardContainer;
+    private String currentStationName = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,16 +41,12 @@ public class MainActivity extends AppCompatActivity {
         seekBar = findViewById(R.id.seekBar);
         tvTime = findViewById(R.id.tvTime);
         tvMetadata = findViewById(R.id.tvMetadata);
-        dbHelper = new DatabaseHelper(this);
         audioContainer = findViewById(R.id.audioContainer);
-
         rewindForwardContainer = findViewById(R.id.rewindForwardContainer);
 
+        dbHelper = new DatabaseHelper(this);
 
-        findViewById(R.id.btnRadioList).setOnClickListener(v -> showRadioListDialog());
-        findViewById(R.id.btnDirectUrl).setOnClickListener(v -> showUrlDialog());
-
-        // Вибір локального файлу
+        // Кнопка: Обрати файл з пристрою
         findViewById(R.id.btnPickLocal).setOnClickListener(v -> {
             Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
             intent.setType("*/*");
@@ -57,13 +55,18 @@ public class MainActivity extends AppCompatActivity {
             startActivityForResult(intent, 101);
         });
 
+        // Кнопка: Радіо Android++
+        findViewById(R.id.btnRadioList).setOnClickListener(v -> showRadioListDialog());
 
-        // Керування
+        // Кнопка: Ввести URI Інтернет (тільки для аудіо/радіо)
+        findViewById(R.id.btnDirectUrl).setOnClickListener(v -> showUrlDialog());
+
+        // Керування відтворенням
         findViewById(R.id.btnPlay).setOnClickListener(v -> playMedia());
         findViewById(R.id.btnPause).setOnClickListener(v -> pauseMedia());
         findViewById(R.id.btnStop).setOnClickListener(v -> stopMedia());
 
-        // Перемотування (Зауваження 2)
+        // Кнопки перемотування
         findViewById(R.id.btnRewind).setOnClickListener(v -> seekRelative(-15000));
         findViewById(R.id.btnForward).setOnClickListener(v -> seekRelative(15000));
 
@@ -82,93 +85,95 @@ public class MainActivity extends AppCompatActivity {
 
     private void showRadioListDialog() {
         Cursor cursor = dbHelper.getAllStations();
-        String[] names = new String[cursor.getCount() + 1];
-        String[] urls = new String[cursor.getCount() + 1];
+        final String[] names = new String[cursor.getCount() + 1];
+        final String[] urls = new String[cursor.getCount() + 1];
 
         int i = 0;
         while (cursor.moveToNext()) {
-            names[i] = cursor.getString(1); // NAME
-            urls[i] = cursor.getString(2); // URL
+            names[i] = cursor.getString(1);
+            urls[i] = cursor.getString(2);
             i++;
         }
+        cursor.close();
         names[i] = "[ + Додати нову станцію ]";
 
         new AlertDialog.Builder(this)
-                .setTitle("Оберіть станцію")
+                .setTitle("Радіо Android++")
                 .setItems(names, (dialog, clicked) -> {
                     if (clicked == names.length - 1) {
                         showAddStationDialog();
                     } else {
                         currentUri = Uri.parse(urls[clicked]);
-                        isVideo = false;
+                        currentStationName = names[clicked];
+                        isVideo = false; // Радіо — це завжди аудіо
                         prepareMedia();
-                        audioContainer.setVisibility(View.GONE); // Приховуємо часову лінію (Пункт 1)
                     }
                 }).show();
     }
 
     private void showAddStationDialog() {
         LinearLayout layout = new LinearLayout(this);
-        // Виправлено: VERTICAL замість vertical
         layout.setOrientation(LinearLayout.VERTICAL);
-
-        final EditText nameInput = new EditText(this);
-        nameInput.setHint("Назва");
-
-        final EditText urlInput = new EditText(this);
-        urlInput.setHint("URL (https://...)");
-
-        layout.addView(nameInput);
-        layout.addView(urlInput);
+        layout.setPadding(50, 40, 50, 10);
+        final EditText nameInput = new EditText(this); nameInput.setHint("Назва станції");
+        final EditText urlInput = new EditText(this); urlInput.setHint("URL (http/https)");
+        layout.addView(nameInput); layout.addView(urlInput);
 
         new AlertDialog.Builder(this)
                 .setTitle("Нова станція")
                 .setView(layout)
                 .setPositiveButton("Зберегти", (d, w) -> {
-                    String name = nameInput.getText().toString();
-                    String url = urlInput.getText().toString();
-                    if (!name.isEmpty() && !url.isEmpty()) {
-                        dbHelper.addStation(name, url);
-                        Toast.makeText(this, "Додано!", Toast.LENGTH_SHORT).show();
+                    dbHelper.addStation(nameInput.getText().toString(), urlInput.getText().toString());
+                    showRadioListDialog();
+                })
+                .setNegativeButton("Скасувати", (d, w) -> showRadioListDialog()).show();
+    }
+
+    private void showUrlDialog() {
+        EditText input = new EditText(this);
+        input.setHint("Вставте посилання з Google Диску");
+
+        new AlertDialog.Builder(this)
+                .setTitle("Медіа з Google Диску")
+                .setView(input)
+                .setPositiveButton("Грати", (d, w) -> {
+                    String url = input.getText().toString().trim();
+                    if (url.contains("drive.google.com")) {
+                        // Конвертуємо посилання у пряме (uc?export=download)
+                        url = convertDriveLink(url);
+                        currentUri = Uri.parse(url);
+                        currentStationName = "Файл з Хмари";
+
+                        // Для Google Диску ми не завжди знаємо розширення
+                        isVideo = true;
+                        prepareMedia();
                     } else {
-                        Toast.makeText(this, "Заповніть всі поля", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Це не посилання на Google Диск", Toast.LENGTH_SHORT).show();
                     }
                 })
                 .setNegativeButton("Скасувати", null)
                 .show();
     }
 
-    private void showUrlDialog() {
-        EditText input = new EditText(this);
-        input.setHint("Вставте URL потоку (mp3/mp4/aac)");
-        new AlertDialog.Builder(this)
-                .setTitle("Відтворити з мережі")
-                .setView(input)
-                .setPositiveButton("Грати", (d, w) -> {
-                    String url = input.getText().toString();
-                    if (!url.isEmpty()) {
-                        currentUri = Uri.parse(url);
-                        // Якщо в URL є розширення відео, ставимо прапорець
-                        isVideo = url.toLowerCase().contains(".mp4") || url.toLowerCase().contains(".mkv");
-                        prepareMedia();
-                    }
-                }).show();
+    // Допоміжний метод для конвертації посилань
+    private String convertDriveLink(String url) {
+        if (url.contains("/file/d/")) {
+            String id = url.split("/file/d/")[1].split("/")[0];
+            return "https://drive.google.com/uc?export=download&id=" + id;
+        }
+        return url;
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 101 && resultCode == RESULT_OK && data != null) {
-            Uri selectedUri = data.getData();
-            String mime = getContentResolver().getType(selectedUri);
-
+            currentUri = data.getData();
+            String mime = getContentResolver().getType(currentUri);
             if (mime != null && (mime.startsWith("audio/") || mime.startsWith("video/"))) {
-                currentUri = selectedUri;
                 isVideo = mime.startsWith("video/");
                 prepareMedia();
                 loadMetadata(currentUri);
-            } else {
-                Toast.makeText(this, "Тільки аудіо або відео!", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -176,29 +181,37 @@ public class MainActivity extends AppCompatActivity {
     private void prepareMedia() {
         stopMedia();
 
-        // Перевіряємо, чи це локальний файл з пам'яті пристрою
+        String uriString = (currentUri != null) ? currentUri.toString() : "";
         boolean isLocalFile = (currentUri != null && "content".equals(currentUri.getScheme()));
+        // Перевіряємо, чи це наше конвертоване посилання з Диску
+        boolean isGoogleDrive = uriString.contains("drive.google.com");
 
-        if (isVideo || isLocalFile) {
-            // Показуємо все для відео або локальних аудіо-файлів
+        // Показуємо інтерфейс керування для локальних файлів та для файлів з Google Диску
+        if (isVideo || isLocalFile || isGoogleDrive) {
             audioContainer.setVisibility(View.VISIBLE);
             if (rewindForwardContainer != null) {
                 rewindForwardContainer.setVisibility(View.VISIBLE);
             }
         } else {
-            // Ховаємо лінійку та кнопки перемоту для РАДІО (URL-потоків)
+            // Ховаємо тільки для Радіо (де немає фіксованої тривалості)
             audioContainer.setVisibility(View.GONE);
             if (rewindForwardContainer != null) {
                 rewindForwardContainer.setVisibility(View.GONE);
             }
         }
 
-        if (isVideo) {
+        if (isVideo || isGoogleDrive) {
             videoView.setVisibility(View.VISIBLE);
             videoView.setVideoURI(currentUri);
-            videoView.setMediaController(new MediaController(this));
+
+            MediaController mc = new MediaController(this);
+            mc.setAnchorView(videoView);
+            videoView.setMediaController(mc);
+
             videoView.setOnPreparedListener(mp -> {
-                seekBar.setMax(videoView.getDuration());
+                if (mp.getDuration() > 0) {
+                    seekBar.setMax(mp.getDuration());
+                }
                 updateSeekBar();
                 videoView.start();
             });
@@ -210,9 +223,7 @@ public class MainActivity extends AppCompatActivity {
                 mediaPlayer.setDataSource(this, currentUri);
                 mediaPlayer.setOnPreparedListener(mp -> {
                     mp.start();
-                    if (mp.getDuration() > 0) {
-                        seekBar.setMax(mp.getDuration());
-                    }
+                    if (mp.getDuration() > 0) seekBar.setMax(mp.getDuration());
                     updateSeekBar();
                 });
                 mediaPlayer.setLooping(true);
@@ -223,22 +234,29 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void seekRelative(int delta) {
-        if (isVideo) videoView.seekTo(videoView.getCurrentPosition() + delta);
-        else if (mediaPlayer != null) mediaPlayer.seekTo(mediaPlayer.getCurrentPosition() + delta);
-    }
-
     private void updateSeekBar() {
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                int curr = isVideo ? videoView.getCurrentPosition() : (mediaPlayer != null ? mediaPlayer.getCurrentPosition() : 0);
-                int dur = isVideo ? videoView.getDuration() : (mediaPlayer != null ? mediaPlayer.getDuration() : 0);
-                seekBar.setProgress(curr);
-                tvTime.setText(formatTime(curr) + " / " + formatTime(dur));
-                handler.postDelayed(this, 1000);
+                if (mediaPlayer != null || (isVideo && videoView.isPlaying())) {
+                    if (audioContainer.getVisibility() == View.GONE) {
+                        tvMetadata.setText("Радіо: " + currentStationName);
+                        tvTime.setText("Прямий ефір");
+                    } else {
+                        int curr = isVideo ? videoView.getCurrentPosition() : mediaPlayer.getCurrentPosition();
+                        int dur = isVideo ? videoView.getDuration() : mediaPlayer.getDuration();
+                        seekBar.setProgress(curr);
+                        tvTime.setText(formatTime(curr) + " / " + formatTime(dur));
+                    }
+                    handler.postDelayed(this, 1000);
+                }
             }
         }, 0);
+    }
+
+    private void seekRelative(int delta) {
+        if (isVideo) videoView.seekTo(videoView.getCurrentPosition() + delta);
+        else if (mediaPlayer != null) mediaPlayer.seekTo(mediaPlayer.getCurrentPosition() + delta);
     }
 
     private String formatTime(int ms) {
@@ -263,8 +281,7 @@ public class MainActivity extends AppCompatActivity {
             r.setDataSource(this, uri);
             String title = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE);
             String artist = r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST);
-            tvMetadata.setText("Зараз грає: " + (title != null ? title : "Unknown") + " - " + artist);
+            tvMetadata.setText((title != null ? title : "Локальний файл") + " - " + (artist != null ? artist : "Невідомо"));
         } catch (Exception e) { tvMetadata.setText("Метадані недоступні"); }
     }
 }
-

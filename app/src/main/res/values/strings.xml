@@ -1,9 +1,12 @@
 <resources>
-    <string name="app_name">My First Application</string>
+
     <string name="btnPickLocal">Обрати файл з пристрою</string>
-    <string name="btnStreamUrl">Завантажити з Інтернет (URL)</string>
-    <string name="play">Play</string>
-    <string name="pause">Pause</string>
-    <string name="stop">Stop</string>
-    <string name="meta">Метадані файлу...</string>
+    <string name="btnRadioList">Радіо Android++</string>
+    <string name="btnDirectUrl">Ввести URI Інтернет</string>
+    <string name="tvTime">00:00 / 00:00</string>
+    <string name="btnRewind">-15s</string>
+    <string name="btnForward">+15s</string>
+    <string name="btnPlay">Play</string>
+    <string name="btnPause">Pause</string>
+    <string name="btnStop">Stop</string>
 </resources>

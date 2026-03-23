@@ -4,24 +4,27 @@
     android:padding="16dp">
 
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-        <Button android:id="@+id/btnPickLocal"
+        <Button
+            android:id="@+id/btnPickLocal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Обрати файл з пристрою" />
+            android:text="@string/btnPickLocal" />
 
-        <Button android:id="@+id/btnRadioList"
+        <Button
+            android:id="@+id/btnRadioList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Радіо Android++" />
+            android:text="@string/btnRadioList" />
 
-        <Button android:id="@+id/btnDirectUrl"
+        <Button
+            android:id="@+id/btnDirectUrl"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Ввести URI Інтернет" />
+            android:text="@string/btnDirectUrl" />
 
         <VideoView
             android:id="@+id/videoView"
@@ -35,38 +38,64 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="10dp">
+
             <SeekBar
                 android:id="@+id/seekBar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
+
             <TextView
                 android:id="@+id/tvTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="00:00 / 00:00"
-                android:layout_gravity="center" />
+                android:layout_gravity="center"
+                android:text="@string/tvTime" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/rewindForwardContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:layout_marginTop="10dp"
             android:gravity="center"
-            android:layout_marginTop="10dp">
+            android:orientation="horizontal">
 
-            <Button android:id="@+id/btnRewind" android:text="-15s" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <Button android:id="@+id/btnForward" android:text="+15s" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <Button
+                android:id="@+id/btnRewind"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/btnRewind" />
+
+            <Button
+                android:id="@+id/btnForward"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/btnForward" />
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
-            <Button android:id="@+id/btnPlay" android:text="Play" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <Button android:id="@+id/btnPause" android:text="Pause" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <Button android:id="@+id/btnStop" android:text="Stop" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnPlay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/btnPlay" />
+
+            <Button
+                android:id="@+id/btnPause"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/btnPause" />
+
+            <Button
+                android:id="@+id/btnStop"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/btnStop" />
         </LinearLayout>
 
         <TextView
