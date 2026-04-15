@@ -6,186 +6,80 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.widget.*;
+import android.view.View;
+import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
-
-import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.XAxis;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     private SensorManager sensorManager;
-    private Sensor linearAccelSensor;
+    private Sensor accelerometer;
 
-    private float vx = 0, vy = 0;
-    private float sx = 0, sy = 0;
-    private float sTotal = 0;
-    private long lastTimestamp = 0;
+    private View bubble;
+    private TextView tvAngles;
 
-    private static final float NOISE_THRESHOLD = 0.15f;
+    // Чутливість (на скільки пікселів зсувається бульбашка при нахилі)
+    private static final int SENSITIVITY = 50;
 
-    private LineChart chartX, chartY, chartTotal;
-    private Spinner spinnerT, spinnerPrecision;
-    private File csvFile;
-
-    private Handler handler = new Handler();
-    private Runnable logRunnable;
+    // Гравітаційна стала для розрахунку кутів
+    private static final float GRAVITY = SensorManager.GRAVITY_EARTH;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        csvFile = new File(getFilesDir(), "displacement_2d_data.csv");
-        initUI();
-        initSensor();
-        startLogging();
-    }
+        bubble = findViewById(R.id.bubble);
+        tvAngles = findViewById(R.id.tvAngles);
 
-    private void initUI() {
-        chartX = findViewById(R.id.chartX);
-        chartY = findViewById(R.id.chartY);
-        chartTotal = findViewById(R.id.chartTotal);
-        spinnerT = findViewById(R.id.spinnerT);
-        spinnerPrecision = findViewById(R.id.spinnerPrecision);
-
-        setupChart(chartX, "Переміщення X (м)");
-        setupChart(chartY, "Переміщення Y (м)");
-        setupChart(chartTotal, "Модуль переміщення 2D (м)");
-
-        findViewById(R.id.btnClear).setOnClickListener(v -> clearAll());
-    }
-
-    private void setupChart(LineChart chart, String label) {
-        chart.getDescription().setEnabled(false);
-        chart.setData(new LineData(new LineDataSet(new ArrayList<>(), label)));
-
-        XAxis xAxis = chart.getXAxis();
-        xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
-        xAxis.setValueFormatter(new TimeAxisValueFormatter());
-        xAxis.setGranularity(120000f);
-
-        chart.setDragEnabled(true);
-        chart.setScaleXEnabled(true);
-        chart.setScaleYEnabled(false);
-    }
-
-    private void initSensor() {
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        linearAccelSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
-
-        if (linearAccelSensor == null) {
-            Toast.makeText(this, "Лінійний акселерометр відсутній!", Toast.LENGTH_LONG).show();
+        if (sensorManager != null) {
+            accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         }
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() != Sensor.TYPE_LINEAR_ACCELERATION) return;
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            float x = event.values[0];
+            float y = event.values[1];
 
-        if (lastTimestamp != 0) {
-            float dt = (event.timestamp - lastTimestamp) * 1.0f / 1000000000.0f;
+            // 1. Розрахунок кутів нахилу в градусах
+            // Обмежуємо значення від -1 до 1, щоб уникнути помилок математики
+            float normalizedX = Math.max(-1.0f, Math.min(1.0f, x / GRAVITY));
+            float normalizedY = Math.max(-1.0f, Math.min(1.0f, y / GRAVITY));
 
-            float ax = event.values[0];
-            float ay = event.values[1];
+            int angleX = (int) Math.toDegrees(Math.asin(normalizedX));
+            int angleY = (int) Math.toDegrees(Math.asin(normalizedY));
 
-            if (Math.abs(ax) < NOISE_THRESHOLD) { ax = 0; vx = 0; }
-            if (Math.abs(ay) < NOISE_THRESHOLD) { ay = 0; vy = 0; }
+            // 2. Оновлення тексту на екрані
+            tvAngles.setText("Нахил X: " + angleX + "°\nНахил Y: " + angleY + "°");
 
-            sx += vx * dt + 0.5f * ax * dt * dt;
-            sy += vy * dt + 0.5f * ay * dt * dt;
+            // 3. Зсув бульбашки по екрану
+            // Знак мінус для осі X, щоб бульбашка "спливала" вгору проти гравітації, як справжня
+            bubble.setTranslationX(x * SENSITIVITY);
+            bubble.setTranslationY(-y * SENSITIVITY);
 
-            vx += ax * dt;
-            vy += ay * dt;
-
-            sTotal = (float) Math.sqrt(sx * sx + sy * sy);
-        }
-        lastTimestamp = event.timestamp;
-    }
-
-    private void startLogging() {
-        logRunnable = new Runnable() {
-            @Override
-            public void run() {
-                processAndLogData();
-                int tSeconds = Integer.parseInt(spinnerT.getSelectedItem().toString());
-                handler.postDelayed(this, tSeconds * 1000);
+            // 4. Візуалізація: зміна кольору, якщо телефон лежить рівно (похибка 2 градуси)
+            if (Math.abs(angleX) <= 2 && Math.abs(angleY) <= 2) {
+                bubble.setBackgroundResource(R.drawable.bubble_green);
+            } else {
+                bubble.setBackgroundResource(R.drawable.bubble_red);
             }
-        };
-        handler.post(logRunnable);
-    }
-
-    private void processAndLogData() {
-        long now = System.currentTimeMillis();
-        int precision = Integer.parseInt(spinnerPrecision.getSelectedItem().toString());
-        String format = "%." + precision + "f";
-
-        saveToCsv(now, sx, sy, sTotal, format);
-
-        addEntry(chartX, now, sx);
-        addEntry(chartY, now, sy);
-        addEntry(chartTotal, now, sTotal);
-
-        checkThresholds(sTotal);
-    }
-
-    private void addEntry(LineChart chart, long x, float y) {
-        LineData data = chart.getData();
-        if (data != null) {
-            data.addEntry(new Entry(x, y), 0);
-            data.notifyDataChanged();
-            chart.notifyDataSetChanged();
-            chart.setVisibleXRangeMaximum(600000);
-            chart.moveViewToX(x);
         }
     }
 
-    private void saveToCsv(long time, float x, float y, float total, String fmt) {
-        try (FileWriter writer = new FileWriter(csvFile, true)) {
-            writer.append(String.format(Locale.US, "%d," + fmt + "," + fmt + "," + fmt + "\n",
-                    time, x, y, total));
-        } catch (IOException e) { e.printStackTrace(); }
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // Залишаємо порожнім, для цієї задачі зміна точності не критична
     }
-
-    private void checkThresholds(float totalDisplacement) {
-        if (totalDisplacement > 5.0f) {
-            Toast.makeText(this, "Перевищено ліміт переміщення (> 5м)!", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void clearAll() {
-        sx = 0; sy = 0; sTotal = 0;
-        vx = 0; vy = 0;
-        lastTimestamp = 0;
-
-        if (csvFile.exists()) csvFile.delete();
-        chartX.getData().clearValues();
-        chartY.getData().clearValues();
-        chartTotal.getData().clearValues();
-
-        chartX.invalidate();
-        chartY.invalidate();
-        chartTotal.invalidate();
-        Toast.makeText(this, "Дані та координати очищено", Toast.LENGTH_SHORT).show();
-    }
-
-    @Override public void onAccuracyChanged(Sensor sensor, int accuracy) {}
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (linearAccelSensor != null) {
-            sensorManager.registerListener(this, linearAccelSensor, SensorManager.SENSOR_DELAY_GAME);
+        if (accelerometer != null) {
+            // Використовуємо SENSOR_DELAY_GAME для плавної анімації (приблизно 50 кадрів на секунду)
+            sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
         }
     }
 
@@ -193,7 +87,5 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onPause() {
         super.onPause();
         sensorManager.unregisterListener(this);
-        lastTimestamp = 0;
-        vx = 0; vy = 0;
     }
 }

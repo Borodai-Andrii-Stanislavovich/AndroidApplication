@@ -1,28 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:background="#2C3E50">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <TextView
+        android:id="@+id/tvAngles"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="60dp"
+        android:text="Нахил X: 0°\nНахил Y: 0°"
+        android:textColor="#ECF0F1"
+        android:textSize="28sp"
+        android:textAlignment="center"
+        android:textStyle="bold"/>
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Інтервал T (сек):" />
-        <Spinner android:id="@+id/spinnerT" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:entries="@array/intervals" />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:layout_centerInParent="true"
+        android:background="#7F8C8D" />
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Точність (знаків після коми):" android:layout_marginTop="8dp"/>
-        <Spinner android:id="@+id/spinnerPrecision" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:entries="@array/precision_options" />
+    <View
+        android:layout_width="2dp"
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true"
+        android:background="#7F8C8D" />
 
-        <Button android:id="@+id/btnClear" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="Очистити CSV та Графіки" android:layout_marginTop="8dp"/>
+    <View
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_centerInParent="true"
+        android:background="@drawable/ring" />
 
-        <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartX" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="16dp" />
-        <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartY" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="16dp" />
-        <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartTotal" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="16dp" />
+    <View
+        android:id="@+id/bubble"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_centerInParent="true"
+        android:background="@drawable/bubble_red" />
 
-    </LinearLayout>
-</ScrollView>
+</RelativeLayout>
