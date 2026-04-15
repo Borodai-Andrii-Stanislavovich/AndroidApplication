@@ -1,5 +1,10 @@
 <resources>
     <string name="app_name">MyFirstApplication</string>
+    <string name="x_nsin_0_000_ncos_0_000_ntan_0_000">X\nsin: 0.000\ncos: 0.000\ntan: 0.000</string>
+    <string name="y_nsin_0_000_ncos_0_000_ntan_0_000">Y\nsin: 0.000\ncos: 0.000\ntan: 0.000</string>
+    <string name="x_0_n_y_0">Нахил X: 0°\nНахил Y: 0°</string>
+    <string name="list">Список міток</string>
+    <string name="create">Створити мітку</string>
 
     <string-array name="intervals">
         <item>1</item>
