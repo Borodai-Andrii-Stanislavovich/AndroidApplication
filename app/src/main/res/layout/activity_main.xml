@@ -4,11 +4,26 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
-    <TextView
-        android:id="@+id/sensorListTextView"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Searching for sensors..."
-        android:textSize="14sp"
-        android:fontFamily="monospace" />
+        android:orientation="vertical">
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Інтервал T (сек):" />
+        <Spinner android:id="@+id/spinnerT" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:entries="@array/intervals" />
+
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Точність (знаків після коми):" android:layout_marginTop="8dp"/>
+        <Spinner android:id="@+id/spinnerPrecision" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:entries="@array/precision_options" />
+
+        <Button android:id="@+id/btnClear" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="Очистити CSV та Графіки" android:layout_marginTop="8dp"/>
+
+        <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartTemp" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="16dp" />
+        <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartHum" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="16dp" />
+        <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartPress" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="16dp" />
+        <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartGcc" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="16dp" />
+
+    </LinearLayout>
 </ScrollView>
