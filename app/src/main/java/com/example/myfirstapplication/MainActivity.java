@@ -25,11 +25,16 @@ import java.util.Locale;
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     private SensorManager sensorManager;
-    private Sensor tempSensor, humSensor, pressSensor;
-    private float lastTemp = 1.0f, lastHum = 1.0f, lastPress = 1.0f;
-    private boolean hasTemp, hasHum, hasPress;
+    private Sensor linearAccelSensor;
 
-    private LineChart chartTemp, chartHum, chartPress, chartGcc;
+    private float vx = 0, vy = 0;
+    private float sx = 0, sy = 0;
+    private float sTotal = 0;
+    private long lastTimestamp = 0;
+
+    private static final float NOISE_THRESHOLD = 0.15f;
+
+    private LineChart chartX, chartY, chartTotal;
     private Spinner spinnerT, spinnerPrecision;
     private File csvFile;
 
@@ -41,24 +46,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        csvFile = new File(getFilesDir(), "weather_data.csv");
+        csvFile = new File(getFilesDir(), "displacement_2d_data.csv");
         initUI();
-        initSensors();
+        initSensor();
         startLogging();
     }
 
     private void initUI() {
-        chartTemp = findViewById(R.id.chartTemp);
-        chartHum = findViewById(R.id.chartHum);
-        chartPress = findViewById(R.id.chartPress);
-        chartGcc = findViewById(R.id.chartGcc);
+        chartX = findViewById(R.id.chartX);
+        chartY = findViewById(R.id.chartY);
+        chartTotal = findViewById(R.id.chartTotal);
         spinnerT = findViewById(R.id.spinnerT);
         spinnerPrecision = findViewById(R.id.spinnerPrecision);
 
-        setupChart(chartTemp, "Температура (°C)");
-        setupChart(chartHum, "Вологість (%)");
-        setupChart(chartPress, "Тиск (hPa)");
-        setupChart(chartGcc, "GCC (T*H*P)");
+        setupChart(chartX, "Переміщення X (м)");
+        setupChart(chartY, "Переміщення Y (м)");
+        setupChart(chartTotal, "Модуль переміщення 2D (м)");
 
         findViewById(R.id.btnClear).setOnClickListener(v -> clearAll());
     }
@@ -70,33 +73,51 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         XAxis xAxis = chart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setValueFormatter(new TimeAxisValueFormatter());
-        xAxis.setGranularity(120000f); // 2 хвилини у мілісекундах (120 * 1000)
+        xAxis.setGranularity(120000f);
 
         chart.setDragEnabled(true);
         chart.setScaleXEnabled(true);
         chart.setScaleYEnabled(false);
     }
 
-    private void initSensors() {
+    private void initSensor() {
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        tempSensor = sensorManager.getDefaultSensor(Sensor.TYPE_AMBIENT_TEMPERATURE);
-        humSensor = sensorManager.getDefaultSensor(Sensor.TYPE_RELATIVE_HUMIDITY);
-        pressSensor = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
+        linearAccelSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
 
-        hasTemp = (tempSensor != null);
-        hasHum = (humSensor != null);
-        hasPress = (pressSensor != null);
-
-        if (!hasTemp || !hasHum || !hasPress) {
-            Toast.makeText(this, "Деякі датчики відсутні. Значення замінено на 1.", Toast.LENGTH_LONG).show();
+        if (linearAccelSensor == null) {
+            Toast.makeText(this, "Лінійний акселерометр відсутній!", Toast.LENGTH_LONG).show();
         }
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() != Sensor.TYPE_LINEAR_ACCELERATION) return;
+
+        if (lastTimestamp != 0) {
+            float dt = (event.timestamp - lastTimestamp) * 1.0f / 1000000000.0f;
+
+            float ax = event.values[0];
+            float ay = event.values[1];
+
+            if (Math.abs(ax) < NOISE_THRESHOLD) { ax = 0; vx = 0; }
+            if (Math.abs(ay) < NOISE_THRESHOLD) { ay = 0; vy = 0; }
+
+            sx += vx * dt + 0.5f * ax * dt * dt;
+            sy += vy * dt + 0.5f * ay * dt * dt;
+
+            vx += ax * dt;
+            vy += ay * dt;
+
+            sTotal = (float) Math.sqrt(sx * sx + sy * sy);
+        }
+        lastTimestamp = event.timestamp;
     }
 
     private void startLogging() {
         logRunnable = new Runnable() {
             @Override
             public void run() {
-                processData();
+                processAndLogData();
                 int tSeconds = Integer.parseInt(spinnerT.getSelectedItem().toString());
                 handler.postDelayed(this, tSeconds * 1000);
             }
@@ -104,68 +125,58 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         handler.post(logRunnable);
     }
 
-    private void processData() {
+    private void processAndLogData() {
         long now = System.currentTimeMillis();
         int precision = Integer.parseInt(spinnerPrecision.getSelectedItem().toString());
         String format = "%." + precision + "f";
 
-        float gcc = lastTemp * lastHum * lastPress;
+        saveToCsv(now, sx, sy, sTotal, format);
 
-        saveToCsv(now, lastTemp, lastHum, lastPress, gcc, format);
+        addEntry(chartX, now, sx);
+        addEntry(chartY, now, sy);
+        addEntry(chartTotal, now, sTotal);
 
-        if (hasTemp) addEntry(chartTemp, now, lastTemp);
-        if (hasHum) addEntry(chartHum, now, lastHum);
-        if (hasPress) addEntry(chartPress, now, lastPress);
-        addEntry(chartGcc, now, gcc);
-
-        checkThresholds(lastTemp, lastHum, lastPress);
+        checkThresholds(sTotal);
     }
 
     private void addEntry(LineChart chart, long x, float y) {
         LineData data = chart.getData();
-
         if (data != null) {
             data.addEntry(new Entry(x, y), 0);
-
             data.notifyDataChanged();
-
             chart.notifyDataSetChanged();
-
             chart.setVisibleXRangeMaximum(600000);
             chart.moveViewToX(x);
         }
     }
 
-    private void saveToCsv(long time, float t, float h, float p, float gcc, String fmt) {
+    private void saveToCsv(long time, float x, float y, float total, String fmt) {
         try (FileWriter writer = new FileWriter(csvFile, true)) {
-            writer.append(String.format(Locale.US, "%d," + fmt + "," + fmt + "," + fmt + "," + fmt + "\n",
-                    time, t, h, p, gcc));
+            writer.append(String.format(Locale.US, "%d," + fmt + "," + fmt + "," + fmt + "\n",
+                    time, x, y, total));
         } catch (IOException e) { e.printStackTrace(); }
     }
 
+    private void checkThresholds(float totalDisplacement) {
+        if (totalDisplacement > 5.0f) {
+            Toast.makeText(this, "Перевищено ліміт переміщення (> 5м)!", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void clearAll() {
+        sx = 0; sy = 0; sTotal = 0;
+        vx = 0; vy = 0;
+        lastTimestamp = 0;
+
         if (csvFile.exists()) csvFile.delete();
-        chartTemp.getData().clearValues();
-        chartHum.getData().clearValues();
-        chartPress.getData().clearValues();
-        chartGcc.getData().clearValues();
+        chartX.getData().clearValues();
+        chartY.getData().clearValues();
+        chartTotal.getData().clearValues();
 
-        chartTemp.invalidate();
-        chartHum.invalidate();
-        chartPress.invalidate();
-        chartGcc.invalidate();
-        Toast.makeText(this, "Дані очищено", Toast.LENGTH_SHORT).show();
-    }
-
-    private void checkThresholds(float t, float h, float p) {
-        if (t > 40) Toast.makeText(this, "Критична температура!", Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_AMBIENT_TEMPERATURE) lastTemp = event.values[0];
-        if (event.sensor.getType() == Sensor.TYPE_RELATIVE_HUMIDITY) lastHum = event.values[0];
-        if (event.sensor.getType() == Sensor.TYPE_PRESSURE) lastPress = event.values[0];
+        chartX.invalidate();
+        chartY.invalidate();
+        chartTotal.invalidate();
+        Toast.makeText(this, "Дані та координати очищено", Toast.LENGTH_SHORT).show();
     }
 
     @Override public void onAccuracyChanged(Sensor sensor, int accuracy) {}
@@ -173,14 +184,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     protected void onResume() {
         super.onResume();
-        if (hasTemp) sensorManager.registerListener(this, tempSensor, SensorManager.SENSOR_DELAY_UI);
-        if (hasHum) sensorManager.registerListener(this, humSensor, SensorManager.SENSOR_DELAY_UI);
-        if (hasPress) sensorManager.registerListener(this, pressSensor, SensorManager.SENSOR_DELAY_UI);
+        if (linearAccelSensor != null) {
+            sensorManager.registerListener(this, linearAccelSensor, SensorManager.SENSOR_DELAY_GAME);
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         sensorManager.unregisterListener(this);
+        lastTimestamp = 0;
+        vx = 0; vy = 0;
     }
 }

@@ -10,7 +10,6 @@ public class TimeAxisValueFormatter extends ValueFormatter {
 
     @Override
     public String getFormattedValue(float value) {
-        // value — це timestamp у мілісекундах
         return mFormat.format(new Date((long) value));
     }
 }

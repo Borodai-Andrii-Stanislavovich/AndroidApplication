@@ -20,10 +20,9 @@
         <Button android:id="@+id/btnClear" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:text="Очистити CSV та Графіки" android:layout_marginTop="8dp"/>
 
-        <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartTemp" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="16dp" />
-        <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartHum" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="16dp" />
-        <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartPress" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="16dp" />
-        <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartGcc" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="16dp" />
+        <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartX" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="16dp" />
+        <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartY" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="16dp" />
+        <com.github.mikephil.charting.charts.LineChart android:id="@+id/chartTotal" android:layout_width="match_parent" android:layout_height="250dp" android:layout_marginTop="16dp" />
 
     </LinearLayout>
 </ScrollView>
