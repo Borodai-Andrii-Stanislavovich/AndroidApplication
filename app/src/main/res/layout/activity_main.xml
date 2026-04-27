@@ -1,104 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#2C3E50">
+    android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/tvAngles"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="40dp"
-        android:text="@string/x_0_n_y_0"
-        android:textColor="#ECF0F1"
-        android:textSize="28sp"
-        android:textAlignment="center"
-        android:textStyle="bold"/>
-
-    <View
+    <WebView
+        android:id="@+id/webview"
         android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:layout_centerInParent="true"
-        android:background="#7F8C8D" />
-
-    <View
-        android:layout_width="2dp"
-        android:layout_height="match_parent"
-        android:layout_centerInParent="true"
-        android:background="#7F8C8D" />
-
-    <View
-        android:layout_width="80dp"
-        android:layout_height="80dp"
-        android:layout_centerInParent="true"
-        android:background="@drawable/ring" />
-
-    <View
-        android:id="@+id/bubble"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_centerInParent="true"
-        android:background="@drawable/bubble_green" />
-
-    <LinearLayout
-        android:id="@+id/bottomButtons"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_margin="16dp"
-        android:orientation="horizontal"
-        android:weightSum="2">
-
-        <Button
-            android:id="@+id/btnViewMarks"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="8dp"
-            android:text="@string/list"
-            android:backgroundTint="#95A5A6"
-            android:textColor="#FFFFFF"/>
-
-        <Button
-            android:id="@+id/btnMark"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="@string/create"
-            android:backgroundTint="#3498DB"
-            android:textColor="#FFFFFF"/>
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_above="@id/bottomButtons"
-        android:layout_marginBottom="16dp"
-        android:orientation="horizontal"
-        android:paddingHorizontal="20dp"
-        android:weightSum="2">
-
-        <TextView
-            android:id="@+id/tvTrigX"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/x_nsin_0_000_ncos_0_000_ntan_0_000"
-            android:textColor="#BDC3C7"
-            android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/tvTrigY"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/y_nsin_0_000_ncos_0_000_ntan_0_000"
-            android:textColor="#BDC3C7"
-            android:textSize="16sp"
-            android:gravity="end"
-            android:textAlignment="textEnd" />
-    </LinearLayout>
+        android:layout_height="match_parent" />
 
 </RelativeLayout>

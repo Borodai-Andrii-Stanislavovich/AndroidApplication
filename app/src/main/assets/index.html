@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock Paper Scissors</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f0f2f5; margin: 0; padding-top: 50px; }
+        .score { font-size: 24px; margin-bottom: 20px; }
+        .choices { display: flex; justify-content: center; gap: 20px; }
+        button { font-size: 50px; border: none; background: white; border-radius: 15px; padding: 10px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        button:active { transform: scale(0.9); }
+        #result { font-size: 20px; margin-top: 30px; font-weight: bold; color: #333; }
+        .reset { margin-top: 40px; padding: 10px 20px; font-size: 16px; background: #ff4757; color: white; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="score">You: <span id="user-score">0</span> | Machine: <span id="ai-score">0</span></div>
+
+<div class="choices">
+    <button onclick="play('✊')">✊</button>
+    <button onclick="play('✌️')">✌️</button>
+    <button onclick="play('✋')">✋</button>
+</div>
+
+<div id="result">Choose a shape!</div>
+<button class="reset" onclick="reset()">Reset the account</button>
+
+<script>
+    let userScore = 0;
+    let aiScore = 0;
+    const variants = ['✊', '✌️', '✋'];
+
+    function play(userChoice) {
+        const aiChoice = variants[Math.floor(Math.random() * 3)];
+        let message = `You chose ${userChoice}, Machine chose ${aiChoice}. `;
+
+        if (userChoice === aiChoice) {
+            message += "Draw! 🤝";
+        } else if (
+            (userChoice === '✊' && aiChoice === '✌️') ||
+            (userChoice === '✌️' && aiChoice === '✋') ||
+            (userChoice === '✋' && aiChoice === '✊')
+        ) {
+            message += "You won! 🎉";
+            userScore++;
+        } else {
+            message += "You lost! 😢";
+            aiScore++;
+        }
+
+        document.getElementById('result').innerText = message;
+        document.getElementById('user-score').innerText = userScore;
+        document.getElementById('ai-score').innerText = aiScore;
+
+        if (navigator.vibrate) navigator.vibrate(50);
+    }
+
+    function reset() {
+        userScore = 0;
+        aiScore = 0;
+        document.getElementById('user-score').innerText = 0;
+        document.getElementById('ai-score').innerText = 0;
+        document.getElementById('result').innerText = "Account reset. Let's start?";
+    }
+</script>
+</body>
+</html>
